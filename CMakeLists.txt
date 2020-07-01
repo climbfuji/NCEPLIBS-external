@@ -18,7 +18,6 @@ option(BUILD_ESMF "Build ESMF?" ON)
 option(BUILD_NETCDF "Build NetCDF?" ON)
 option(BUILD_JASPER "Build Jasper?" ON)
 option(BUILD_PNG "Build libpng?" ON)
-option(BUILD_WGRIB2 "Build wgrib2?" ON)
 
 # Indicate to cmake what the default link type is
 option(STATIC_IS_DEFAULT "turn on for systems that use static linking by default" OFF)
@@ -31,7 +30,7 @@ if((BUILD_NETCDF OR BUILD_PNG) AND NOT (BUILD_NETCDF AND BUILD_PNG))
   message(FATAL_ERROR "NetCDF and PNG must both be built or both supplied externally")
 endif()
 
-set(libs "MPI" "NETCDF" "ESMF" "JASPER" "PNG" "WGRIB2")
+set(libs "MPI" "NETCDF" "ESMF" "JASPER" "PNG")
 set(libs_to_build)
 foreach(lib ${libs})
   if(BUILD_${lib})
@@ -274,43 +273,6 @@ if(BUILD_JASPER)
 
   file(APPEND ${CMAKE_CONFIG_FILE} "set(JPEG_ROOT \"${CMAKE_INSTALL_PREFIX}\")\n")
   file(APPEND ${CMAKE_CONFIG_FILE} "set(Jasper_ROOT \"${CMAKE_INSTALL_PREFIX}\")\n")
-endif()
-
-if(BUILD_WGRIB2)
-  if(${CMAKE_C_COMPILER_ID} STREQUAL "Intel")
-    set(COMP_SYS intel_linux)
-  elseif(${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
-    set(COMP_SYS gnu_linux)
-  elseif(${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
-    set(COMP_SYS clang_linux)
-  else()
-    message(FATAL_ERROR "Unknown compiler, cannot configure wgrib2")
-  endif()
-
-  # Don't build the wgrib2 executable on systems that link statically by default, this causes all sorts of problems; just build the library
-  if(STATIC_IS_DEFAULT)
-    ExternalProject_Add(wgrib2
-      PREFIX ${PROJECT_BINARY_DIR}/wgrib2
-      SOURCE_DIR ${PROJECT_SOURCE_DIR}/wgrib2
-      INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-      BUILD_IN_SOURCE 1
-      CONFIGURE_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2 && tar -xvf ${PROJECT_SOURCE_DIR}/wgrib2/wgrib2-2.0.8.tar.gz  && patch -N -p0 < ${PROJECT_SOURCE_DIR}/patches/wgrib2.patch
-      # Do not use $(MAKE), because it seems wgrib2 sometimes fails to build when multiple threads are used (to be tested further)
-      BUILD_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2/grib2 && CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} COMP_SYS=${COMP_SYS} make lib
-      INSTALL_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2/grib2 && ${PROJECT_SOURCE_DIR}/wgrib2/install.sh ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_LIBDIR}
-      )
-  else()
-    ExternalProject_Add(wgrib2
-      PREFIX ${PROJECT_BINARY_DIR}/wgrib2
-      SOURCE_DIR ${PROJECT_SOURCE_DIR}/wgrib2
-      INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-      BUILD_IN_SOURCE 1
-      CONFIGURE_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2 && tar -xvf ${PROJECT_SOURCE_DIR}/wgrib2/wgrib2-2.0.8.tar.gz  && patch -N -p0 < ${PROJECT_SOURCE_DIR}/patches/wgrib2.patch
-      BUILD_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2/grib2 && CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} COMP_SYS=${COMP_SYS} make && CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} COMP_SYS=${COMP_SYS} make lib
-      INSTALL_COMMAND cd ${PROJECT_BINARY_DIR}/wgrib2/grib2 && ${PROJECT_SOURCE_DIR}/wgrib2/install.sh ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_LIBDIR}
-      )
-  endif()
-  file(APPEND ${CMAKE_CONFIG_FILE} "set(WGRIB2_ROOT \"${CMAKE_INSTALL_PREFIX}\")\n")
 endif()
 
 if(BUILD_ESMF)
