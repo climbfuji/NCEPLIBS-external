@@ -1,0 +1,43 @@
+name: Build macOS clang+gfortran
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+    env:
+      CC: clang-9
+      CXX: clang-9
+      FC: gfortran-10
+
+    steps:
+
+    - name: Install basic packages
+      run: |
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        # mpich installs gcc@10 as prerequisite
+        brew install automake coreutils gnu-sed mpich llvm@9
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Init submodules
+      run: git submodule update --init --recursive
+
+    - name: Build NCEPLIBS-external
+      run: |
+        export PATH="/usr/local/opt/llvm@9/bin:$PATH"
+        export LD_LIBRARY_PATH="/usr/local/opt/llvm@9/lib:$LD_LIBRARY_PATH"
+        export CPPFLAGS="-I/usr/local/opt/llvm@9/include"
+        export LDFLAGS="-L/usr/local/opt/llvm@9/lib -Wl,-rpath,/usr/local/opt/llvm@9/lib"
+        ls -l /usr/local/opt/llvm@9/bin
+        which $CC
+        which $CXX
+        which $FC
+        $FC --version
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=install -DBUILD_MPI=OFF -DBUILD_WGRIB2=OFF
+        make -j4
+        cat install/share/nceplibs-external.cmake.config

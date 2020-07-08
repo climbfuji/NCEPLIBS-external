@@ -1,5 +1,5 @@
 name: Build Linux gcc+gfortran
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -25,7 +25,6 @@ jobs:
       run: |
         mkdir build
         cd build
-        #cmake .. -DCMAKE_INSTALL_PREFIX=install -DBUILD_WGRIB2=OFF -DBUILD_MPI=OFF
         cmake .. -DCMAKE_INSTALL_PREFIX=install -DBUILD_MPI=OFF
-        ### TEMPORARY make -j4
+        make -j4
         cat install/share/nceplibs-external.cmake.config
